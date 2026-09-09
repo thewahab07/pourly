@@ -6,32 +6,33 @@
  * not unlocked is refused here too, so typing the route directly cannot skip
  * the progression.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
-import { GameBoard } from '../../src/components/game/GameBoard';
-import { LevelCompleteOverlay } from '../../src/components/game/LevelCompleteOverlay';
-import { Button } from '../../src/components/ui/Button';
-import { Icon } from '../../src/components/ui/Icon';
-import { PaperBackground } from '../../src/components/ui/PaperBackground';
-import { ScreenHeader } from '../../src/components/ui/ScreenHeader';
-import { getLevel, getNextLevelId } from '../../src/levels';
-import { playSound } from '../../src/services/audio';
+import { GameBoard } from "../../src/components/game/GameBoard";
+import { LevelCompleteOverlay } from "../../src/components/game/LevelCompleteOverlay";
+import { Button } from "../../src/components/ui/Button";
+import { Icon } from "../../src/components/ui/Icon";
+import { PaperBackground } from "../../src/components/ui/PaperBackground";
+import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
+import { getLevel, getNextLevelId } from "../../src/levels";
+import { playSound } from "../../src/services/audio";
 import {
   hapticInvalid,
   hapticPour,
   hapticSelection,
   hapticSuccess,
-} from '../../src/services/haptics';
+} from "../../src/services/haptics";
 import {
   selectCanUndo,
   selectIsLevelComplete,
   useGameStore,
-} from '../../src/state/gameStore';
-import { useProgressStore } from '../../src/state/progressStore';
-import { UI_COLORS } from '../../src/theme/colors';
+} from "../../src/state/gameStore";
+import { useProgressStore } from "../../src/state/progressStore";
+import { UI_COLORS } from "../../src/theme/colors";
+import { rs } from "../../src/utils/responsive";
 
 /** Parses the route parameter, which arrives as a string or an array of them. */
 function parseLevelId(raw: string | string[] | undefined): number | null {
@@ -75,7 +76,7 @@ export default function GameScreen() {
   // A locked or unknown level never loads; the player is sent to the level list.
   useEffect(() => {
     if (allowed) return;
-    router.replace('/levels');
+    router.replace("/levels");
   }, [allowed, router]);
 
   useEffect(() => {
@@ -103,7 +104,7 @@ export default function GameScreen() {
   useEffect(() => {
     if (!isComplete || celebrated || level === undefined) return;
     setCelebrated(true);
-    playSound('complete');
+    playSound("complete");
     hapticSuccess();
   }, [isComplete, celebrated, level]);
 
@@ -111,22 +112,22 @@ export default function GameScreen() {
     (index: number) => {
       const outcome = tapTube(index);
       switch (outcome.kind) {
-        case 'selected':
-          playSound('select');
+        case "selected":
+          playSound("select");
           hapticSelection();
           break;
-        case 'deselected':
+        case "deselected":
           hapticSelection();
           break;
-        case 'poured':
-          playSound('pour');
+        case "poured":
+          playSound("pour");
           hapticPour();
           break;
-        case 'rejected':
-          playSound('invalid');
+        case "rejected":
+          playSound("invalid");
           hapticInvalid();
           break;
-        case 'ignored':
+        case "ignored":
           break;
       }
     },
@@ -135,7 +136,7 @@ export default function GameScreen() {
 
   const handleUndo = useCallback(() => {
     if (undoMove()) {
-      playSound('click');
+      playSound("click");
       hapticSelection();
     }
   }, [undoMove]);
@@ -149,12 +150,20 @@ export default function GameScreen() {
     router.back();
   }, [router]);
 
+  const handleHome = useCallback(() => {
+    if (level !== undefined) {
+      completeLevel(level.id);
+    }
+    router.replace("/");
+  }, [completeLevel, level, router]);
+
   const handleReplay = useCallback(() => {
     restartLevel();
     setCelebrated(false);
   }, [restartLevel]);
 
-  const nextLevelId = level === undefined ? undefined : getNextLevelId(level.id);
+  const nextLevelId =
+    level === undefined ? undefined : getNextLevelId(level.id);
 
   const handleContinue = useCallback(() => {
     if (level === undefined) return;
@@ -162,15 +171,18 @@ export default function GameScreen() {
     completeLevel(level.id);
 
     if (nextLevelId === undefined) {
-      router.replace('/levels');
+      router.replace("/levels");
       return;
     }
-    router.replace({ pathname: '/game/[id]', params: { id: String(nextLevelId) } });
+    router.replace({
+      pathname: "/game/[id]",
+      params: { id: String(nextLevelId) },
+    });
   }, [completeLevel, level, nextLevelId, router]);
 
   const headerSubtitle = useMemo(() => {
     if (level === undefined || game === null) return undefined;
-    return `${level.name} · ${game.moveCount} ${game.moveCount === 1 ? 'move' : 'moves'}`;
+    return `${level.name} · ${game.moveCount} ${game.moveCount === 1 ? "move" : "moves"}`;
   }, [level, game]);
 
   if (level === undefined || game === null || !allowed) {
@@ -185,7 +197,7 @@ export default function GameScreen() {
 
   return (
     <PaperBackground>
-      <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1" edges={["top", "bottom"]}>
         <ScreenHeader
           title={`Level ${level.id}`}
           subtitle={headerSubtitle}
@@ -220,16 +232,28 @@ export default function GameScreen() {
           ) : null}
         </View>
 
-        <View className="flex-row justify-center gap-3 px-5 pb-3 pt-1">
+        {/* Action bar: scales gap and padding with screen */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            gap: rs(10),
+            paddingHorizontal: rs(16),
+            paddingBottom: rs(10),
+            paddingTop: rs(4),
+          }}
+        >
           <Button
             label="Undo"
             onPress={handleUndo}
             variant="secondary"
             size="medium"
             disabled={!canUndo}
-            icon={<Icon name="undo" size={18} color={UI_COLORS.ink} />}
+            icon={<Icon name="undo" size={rs(17)} color={UI_COLORS.ink} />}
             accessibilityHint={
-              canUndo ? 'Takes back your last pour' : 'No moves to take back yet'
+              canUndo
+                ? "Takes back your last pour"
+                : "No moves to take back yet"
             }
           />
           <Button
@@ -237,7 +261,7 @@ export default function GameScreen() {
             onPress={handleRestart}
             variant="secondary"
             size="medium"
-            icon={<Icon name="restart" size={18} color={UI_COLORS.ink} />}
+            icon={<Icon name="restart" size={rs(17)} color={UI_COLORS.ink} />}
             accessibilityHint="Starts this level again from the beginning"
           />
         </View>
@@ -251,6 +275,7 @@ export default function GameScreen() {
           hasNextLevel={nextLevelId !== undefined}
           onReplay={handleReplay}
           onContinue={handleContinue}
+          onHome={handleHome}
         />
       ) : null}
     </PaperBackground>

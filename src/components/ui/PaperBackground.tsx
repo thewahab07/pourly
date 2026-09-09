@@ -6,9 +6,16 @@
  * compete with the tubes. It is generated once and memoised, so it costs
  * nothing after the first render.
  */
-import { memo, useMemo, type ReactNode } from 'react';
+import { memo, useId, useMemo, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
-import Svg, { Circle, Defs, Rect, RadialGradient, Stop } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Pattern,
+  Rect,
+  RadialGradient,
+  Stop,
+} from 'react-native-svg';
 
 import { UI_COLORS } from '../../theme/colors';
 
@@ -39,11 +46,9 @@ function useGrain(): { cx: number; cy: number; r: number; o: number }[] {
 function PaperBackgroundComponent({ children }: PaperBackgroundProps) {
   const grain = useGrain();
   const { width, height } = useWindowDimensions();
-
-  // Explicit pixel sizes rather than percentages: percentage-sized SVG roots do
-  // not reliably fill an absolutely positioned parent on every platform.
-  const columns = Math.ceil(width / GRAIN_TILE);
-  const rows = Math.ceil(height / GRAIN_TILE);
+  const instanceId = useId().replace(/:/g, '');
+  const vignetteId = `paper-vignette-${instanceId}`;
+  const grainId = `paper-grain-${instanceId}`;
 
   return (
     <View style={styles.root}>
@@ -56,42 +61,34 @@ function PaperBackgroundComponent({ children }: PaperBackgroundProps) {
       >
         <Defs>
           {/* A gentle warm vignette keeps the centre of the screen brighter. */}
-          <RadialGradient id="paper-vignette" cx="50%" cy="38%" r="78%">
+          <RadialGradient id={vignetteId} cx="50%" cy="38%" r="78%">
             <Stop offset="0" stopColor="#FFFCF4" stopOpacity="1" />
             <Stop offset="0.6" stopColor={UI_COLORS.paper} stopOpacity="1" />
             <Stop offset="1" stopColor={UI_COLORS.paperDeep} stopOpacity="1" />
           </RadialGradient>
-        </Defs>
-        <Rect x={0} y={0} width={width} height={height} fill="url(#paper-vignette)" />
-      </Svg>
-
-      {/* The grain tile is repeated by stretching a single small SVG across the
-          screen; at this opacity the repetition is invisible. */}
-      <View style={styles.grainLayer} pointerEvents="none">
-        {Array.from({ length: rows }, (_, row) => (
-          <View key={row} style={styles.grainRow}>
-            {Array.from({ length: columns }, (_, column) => (
-              <Svg
-                key={column}
-                width={GRAIN_TILE}
-                height={GRAIN_TILE}
-                viewBox={`0 0 ${GRAIN_TILE} ${GRAIN_TILE}`}
-              >
-                {grain.map((dot, index) => (
-                  <Circle
-                    key={index}
-                    cx={dot.cx}
-                    cy={dot.cy}
-                    r={dot.r}
-                    fill={UI_COLORS.ink}
-                    opacity={dot.o}
-                  />
-                ))}
-              </Svg>
+          <Pattern
+            id={grainId}
+            x={0}
+            y={0}
+            width={GRAIN_TILE}
+            height={GRAIN_TILE}
+            patternUnits="userSpaceOnUse"
+          >
+            {grain.map((dot, index) => (
+              <Circle
+                key={index}
+                cx={dot.cx}
+                cy={dot.cy}
+                r={dot.r}
+                fill={UI_COLORS.ink}
+                opacity={dot.o}
+              />
             ))}
-          </View>
-        ))}
-      </View>
+          </Pattern>
+        </Defs>
+        <Rect x={0} y={0} width={width} height={height} fill={`url(#${vignetteId})`} />
+        <Rect x={0} y={0} width={width} height={height} fill={`url(#${grainId})`} />
+      </Svg>
 
       <View style={styles.content}>{children}</View>
     </View>
@@ -107,18 +104,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-  },
-  grainLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  grainRow: {
-    flexDirection: 'row',
   },
   content: {
     flex: 1,

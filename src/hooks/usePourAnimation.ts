@@ -22,17 +22,17 @@ import {
 import type { ActivePour } from '../state/gameStore';
 
 // ─── Stage durations (ms) ────────────────────────────────────────────────────
-const LIFT          = 140;   // tube rises out of its slot
-const TRAVEL_DELAY  = 50;    // brief pause before traveling
-const TRAVEL        = 280;   // tube sweeps to position above destination
-const TILT_OVERLAP  = 40;    // stream starts slightly before travel finishes
-const STREAM_IN     = 90;    // stream grows into view
-const FLOW_PER_LAYER = 110;  // time per liquid layer transferred
-const FLOW_MIN      = 200;   // minimum flow time even for 1 layer
-const STREAM_OUT    = 80;    // stream fades after flow ends
-const RETURN_DELAY  = 30;    // brief pause before tube returns
-const RETURN        = 260;   // tube sweeps back to its slot
-const SETTLE        = 180;   // tube eases back down into slot
+const LIFT          = 180;   // tube rises out of its slot
+const TRAVEL_DELAY  = 70;    // brief pause before traveling
+const TRAVEL        = 360;   // tube sweeps to position above destination
+const TILT_OVERLAP  = 70;    // stream starts slightly before travel finishes
+const STREAM_IN     = 130;   // stream grows into view
+const FLOW_PER_LAYER = 145;  // time per liquid layer transferred
+const FLOW_MIN      = 240;   // minimum flow time even for 1 layer
+const STREAM_OUT    = 120;   // stream fades after flow ends
+const RETURN_DELAY  = 50;    // brief pause before tube returns
+const RETURN        = 340;   // tube sweeps back to its slot
+const SETTLE        = 220;   // tube eases back down into slot
 
 // ─── Derived timing ──────────────────────────────────────────────────────────
 
@@ -114,7 +114,7 @@ export function usePourAnimation(
       withTiming(1, { duration: LIFT, easing: Easing.out(Easing.cubic) }),
       withDelay(
         holdDuration,
-        withTiming(0, { duration: SETTLE, easing: Easing.inOut(Easing.quad) }, (finished) => {
+        withTiming(0, { duration: SETTLE, easing: Easing.out(Easing.cubic) }, (finished) => {
           'worklet';
           if (finished === true) runOnJS(notify)();
         }),
@@ -122,15 +122,15 @@ export function usePourAnimation(
     );
 
     // ── Travel (tilt to destination and back) ────────────────────────────────
-    // Sweep out with a smooth ease-out, return with ease-in-out.
+    // Accelerate into position, then decelerate smoothly before returning.
     travel.value = withSequence(
       withDelay(
         TRAVEL_DELAY,
-        withTiming(1, { duration: TRAVEL, easing: Easing.out(Easing.cubic) }),
+        withTiming(1, { duration: TRAVEL, easing: Easing.inOut(Easing.cubic) }),
       ),
       withDelay(
         flowTime + STREAM_OUT + RETURN_DELAY,
-        withTiming(0, { duration: RETURN, easing: Easing.inOut(Easing.cubic) }),
+        withTiming(0, { duration: RETURN, easing: Easing.inOut(Easing.quad) }),
       ),
     );
 
@@ -139,7 +139,7 @@ export function usePourAnimation(
     // ease-out at the end (last drops fall slowly).
     flow.value = withDelay(
       FLOW_START,
-      withTiming(1, { duration: flowTime, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1, { duration: flowTime, easing: Easing.inOut(Easing.cubic) }),
     );
 
     // ── Stream appearance ────────────────────────────────────────────────────
@@ -147,17 +147,23 @@ export function usePourAnimation(
     streamScale.value = withSequence(
       withDelay(
         FLOW_START - STREAM_IN * 0.4,
-        withTiming(1, { duration: STREAM_IN, easing: Easing.out(Easing.cubic) }),
+        withTiming(1, { duration: STREAM_IN, easing: Easing.out(Easing.quad) }),
       ),
       withDelay(
         flowTime,
-        withTiming(0, { duration: STREAM_OUT, easing: Easing.in(Easing.cubic) }),
+        withTiming(0, { duration: STREAM_OUT, easing: Easing.in(Easing.quad) }),
       ),
     );
 
     streamOpacity.value = withSequence(
-      withDelay(FLOW_START - STREAM_IN * 0.4, withTiming(1, { duration: STREAM_IN * 0.6 })),
-      withDelay(flowTime + STREAM_OUT * 0.3, withTiming(0, { duration: STREAM_OUT * 0.7 })),
+      withDelay(
+        FLOW_START - STREAM_IN * 0.4,
+        withTiming(1, { duration: STREAM_IN * 0.6, easing: Easing.out(Easing.quad) }),
+      ),
+      withDelay(
+        flowTime + STREAM_OUT * 0.3,
+        withTiming(0, { duration: STREAM_OUT * 0.7, easing: Easing.in(Easing.quad) }),
+      ),
     );
 
     // Safety watchdog: release board if animation callback is ever lost.

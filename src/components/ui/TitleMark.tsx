@@ -2,7 +2,7 @@
  * The home screen's hero mark: three tubes of liquid arranged like the app
  * icon, gently drifting so the screen feels alive without demanding attention.
  */
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useId } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -83,6 +83,7 @@ function TitleMarkComponent({ tubeWidth }: TitleMarkProps) {
   const capacity = 4;
   const height = tubeWidth * (capacity * 0.74 + 0.92);
   const layerHeight = (height - tubeWidth * 0.085 * 2 - tubeWidth * 0.42) / capacity;
+  const instanceId = useId().replace(/:/g, '');
 
   return (
     <View style={styles.row}>
@@ -94,7 +95,7 @@ function TitleMarkComponent({ tubeWidth }: TitleMarkProps) {
           height={height}
           layerHeight={layerHeight}
           delay={PHASES[index] ?? 0}
-          tubeId={`hero-${index}`}
+          tubeId={`hero-${instanceId}-${index}`}
         />
       ))}
     </View>

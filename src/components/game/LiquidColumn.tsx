@@ -20,6 +20,12 @@ interface LiquidColumnProps {
   readonly clipId: string;
 }
 
+interface LiquidRun {
+  readonly color: LiquidColor;
+  readonly startIndex: number;
+  readonly count: number;
+}
+
 /**
  * Vertical gradient for one liquid layer: lighter at the top, deeper at the
  * bottom, which reads as a small amount of depth without looking glossy.
@@ -42,28 +48,64 @@ function LiquidColumnComponent({ geometry, layers, idPrefix, clipId }: LiquidCol
   const topIndex = layers.length - 1;
   const topColor = layers[topIndex];
   const meniscus = meniscusHeight(geometry);
+  const runs: LiquidRun[] = [];
+
+  layers.forEach((color, index) => {
+    const previous = runs[runs.length - 1];
+    if (previous?.color === color) {
+      runs[runs.length - 1] = {
+        ...previous,
+        count: previous.count + 1,
+      };
+      return;
+    }
+    runs.push({ color, startIndex: index, count: 1 });
+  });
 
   return (
     <>
       <Defs>
-        {layers.map((color, index) => (
-          <LayerGradient key={`${idPrefix}-g-${index}`} id={`${idPrefix}-g-${index}`} color={color} />
+        {runs.map((run, index) => (
+          <LayerGradient
+            key={`${idPrefix}-g-${index}`}
+            id={`${idPrefix}-g-${index}`}
+            color={run.color}
+          />
         ))}
       </Defs>
 
       <G clipPath={`url(#${clipId})`}>
-        {layers.map((_color, index) => (
+        {runs.map((run, index) => (
           <Rect
             key={`${idPrefix}-l-${index}`}
             x={interiorLeft}
-            // Each layer is drawn a hair taller than its slot so neighbouring
-            // layers never show a seam from sub-pixel rounding.
-            y={layerTop(geometry, index)}
+            y={layerTop(geometry, run.startIndex + run.count - 1)}
             width={interiorWidth}
-            height={layerHeight + 0.6}
+            height={run.count * layerHeight + 0.6}
             fill={`url(#${idPrefix}-g-${index})`}
           />
         ))}
+
+        {runs.slice(0, -1).map((run, index) => {
+          const boundaryY = layerTop(geometry, run.startIndex + run.count);
+          const wave = Math.min(layerHeight * 0.1, interiorWidth * 0.04);
+
+          return (
+            <Path
+              key={`${idPrefix}-boundary-${index}`}
+              d={`M ${interiorLeft} ${boundaryY + wave}
+                  C ${interiorLeft + interiorWidth * 0.28} ${boundaryY - wave}
+                    ${interiorLeft + interiorWidth * 0.72} ${boundaryY + wave}
+                    ${interiorLeft + interiorWidth} ${boundaryY - wave}
+                  L ${interiorLeft + interiorWidth} ${boundaryY + wave * 2}
+                  C ${interiorLeft + interiorWidth * 0.72} ${boundaryY + wave * 3}
+                    ${interiorLeft + interiorWidth * 0.28} ${boundaryY + wave}
+                    ${interiorLeft} ${boundaryY + wave * 2}
+                  Z`}
+              fill={`url(#${idPrefix}-g-${index + 1})`}
+            />
+          );
+        })}
 
         {/* Rounded surface on the topmost layer. */}
         {topColor !== undefined ? (

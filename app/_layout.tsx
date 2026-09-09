@@ -5,18 +5,23 @@
  * settings, then hide the splash screen and show the app. Nothing renders
  * before saved state is in place, so the UI never flashes default values.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, StyleSheet, View, type AppStateStatus } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState, StyleSheet, View, type AppStateStatus } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
 
-import '../global.css';
-import { initializeAudio, pauseMusic, releaseAudio, startMusic } from '../src/services/audio';
-import { useProgressStore } from '../src/state/progressStore';
-import { UI_COLORS } from '../src/theme/colors';
+import "../global.css";
+import {
+  initializeAudio,
+  pauseMusic,
+  releaseAudio,
+  startMusic,
+} from "../src/services/audio";
+import { useProgressStore } from "../src/state/progressStore";
+import { UI_COLORS } from "../src/theme/colors";
 
 // Keep the splash visible while progress, settings and audio are prepared.
 void SplashScreen.preventAutoHideAsync();
@@ -58,13 +63,13 @@ export default function RootLayout() {
   useEffect(() => {
     if (!ready) return;
 
-    const subscription = AppState.addEventListener('change', (next) => {
-      const wasActive = appState.current === 'active';
+    const subscription = AppState.addEventListener("change", (next) => {
+      const wasActive = appState.current === "active";
       appState.current = next;
 
-      if (next === 'active' && !wasActive) {
+      if (next === "active" && !wasActive) {
         startMusic();
-      } else if (next !== 'active' && wasActive) {
+      } else if (next !== "active" && wasActive) {
         pauseMusic();
       }
     });
@@ -92,14 +97,17 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerShown: false,
-            animation: 'fade',
+            animation: "fade",
             contentStyle: { backgroundColor: UI_COLORS.paper },
           }}
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="levels" />
           <Stack.Screen name="settings" />
-          <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen
+            name="game/[id]"
+            options={{ animation: "slide_from_right" }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

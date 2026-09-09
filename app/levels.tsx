@@ -5,21 +5,23 @@
  * and the game route independently refuses to open one, so the lock cannot be
  * bypassed by navigating directly.
  */
-import { useCallback, useMemo } from 'react';
-import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useCallback, useMemo } from "react";
+import { ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
-import { LevelCard, type LevelCardState } from '../src/components/ui/LevelCard';
-import { PaperBackground } from '../src/components/ui/PaperBackground';
-import { ScreenHeader } from '../src/components/ui/ScreenHeader';
-import { LEVELS, TOTAL_LEVELS } from '../src/levels';
-import { useProgressStore } from '../src/state/progressStore';
-import { UI_COLORS } from '../src/theme/colors';
+import { LevelCard, type LevelCardState } from "../src/components/ui/LevelCard";
+import { PaperBackground } from "../src/components/ui/PaperBackground";
+import { ScreenHeader } from "../src/components/ui/ScreenHeader";
+import { LEVELS, TOTAL_LEVELS } from "../src/levels";
+import { useProgressStore } from "../src/state/progressStore";
+import { UI_COLORS } from "../src/theme/colors";
+import { gridColumns, rs, rsp } from "../src/utils/responsive";
 
-const GRID_COLUMNS = 4;
-const GRID_GAP = 12;
-const SCREEN_PADDING = 20;
+// Minimum card size before we drop a column — keeps cards tappable on tiny phones.
+const CARD_MIN = rs(66);
+const GRID_GAP = rs(10);
+const SCREEN_PADDING = rsp(16);
 
 export default function LevelsScreen() {
   const router = useRouter();
@@ -28,16 +30,24 @@ export default function LevelsScreen() {
   const unlockedLevel = useProgressStore((state) => state.unlockedLevel);
   const completedLevels = useProgressStore((state) => state.completedLevels);
 
-  const cardSize = useMemo(() => {
-    const available = width - SCREEN_PADDING * 2 - GRID_GAP * (GRID_COLUMNS - 1);
-    return Math.floor(available / GRID_COLUMNS);
-  }, [width]);
+  const columns = useMemo(
+    () => gridColumns(width, CARD_MIN, GRID_GAP, SCREEN_PADDING, 3, 5),
+    [width],
+  );
 
-  const completedSet = useMemo(() => new Set(completedLevels), [completedLevels]);
+  const cardSize = useMemo(() => {
+    const available = width - SCREEN_PADDING * 2 - GRID_GAP * (columns - 1);
+    return Math.floor(available / columns);
+  }, [width, columns]);
+
+  const completedSet = useMemo(
+    () => new Set(completedLevels),
+    [completedLevels],
+  );
 
   const handleSelect = useCallback(
     (levelId: number) => {
-      router.push({ pathname: '/game/[id]', params: { id: String(levelId) } });
+      router.push({ pathname: "/game/[id]", params: { id: String(levelId) } });
     },
     [router],
   );
@@ -48,7 +58,7 @@ export default function LevelsScreen() {
 
   return (
     <PaperBackground>
-      <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1" edges={["top", "bottom"]}>
         <ScreenHeader
           title="Levels"
           subtitle={`${completedLevels.length} of ${TOTAL_LEVELS} complete`}
@@ -59,18 +69,20 @@ export default function LevelsScreen() {
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: SCREEN_PADDING,
-            paddingBottom: 32,
-            paddingTop: 8,
+            paddingBottom: rs(32),
+            paddingTop: rs(8),
           }}
           showsVerticalScrollIndicator={false}
         >
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP }}>
+          <View
+            style={{ flexDirection: "row", flexWrap: "wrap", gap: GRID_GAP }}
+          >
             {LEVELS.map((level, index) => {
               const state: LevelCardState = completedSet.has(level.id)
-                ? 'completed'
+                ? "completed"
                 : level.id <= unlockedLevel
-                  ? 'unlocked'
-                  : 'locked';
+                  ? "unlocked"
+                  : "locked";
 
               return (
                 <LevelCard
@@ -91,7 +103,8 @@ export default function LevelsScreen() {
             className="mt-7 text-center text-sm"
             style={{ color: UI_COLORS.inkMuted }}
           >
-            Finish a level to unlock the next one.{'\n'}Completed levels stay open for replays.
+            Finish a level to unlock the next one.{"\n"}Completed levels stay
+            open for replays.
           </Text>
         </ScrollView>
       </SafeAreaView>

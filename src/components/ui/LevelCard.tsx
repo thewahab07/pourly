@@ -4,8 +4,8 @@
  * Three states, each distinguished by shape, colour *and* an icon, so the grid
  * stays readable without relying on colour alone.
  */
-import { memo, useCallback, useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { memo, useCallback, useEffect } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -13,14 +13,15 @@ import Animated, {
   withDelay,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
-import type { Difficulty } from '../../engine/types';
-import { UI_COLORS } from '../../theme/colors';
-import { SHADOW, SPRING } from '../../theme/tokens';
-import { Icon } from './Icon';
+import type { Difficulty } from "../../engine/types";
+import { UI_COLORS } from "../../theme/colors";
+import { SHADOW, SPRING } from "../../theme/tokens";
+import { rf, rs } from "../../utils/responsive";
+import { Icon } from "./Icon";
 
-export type LevelCardState = 'locked' | 'unlocked' | 'completed';
+export type LevelCardState = "locked" | "unlocked" | "completed";
 
 interface LevelCardProps {
   readonly levelId: number;
@@ -34,19 +35,19 @@ interface LevelCardProps {
 }
 
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  tutorial: 'Tutorial',
-  easy: 'Easy',
-  medium: 'Medium',
-  hard: 'Hard',
-  expert: 'Expert',
+  tutorial: "Tutorial",
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
+  expert: "Expert",
 };
 
 const DIFFICULTY_COLOR: Record<Difficulty, string> = {
-  tutorial: '#7FC4A0',
-  easy: '#5FBF6A',
-  medium: '#F2C438',
-  hard: '#F28B36',
-  expert: '#E8503F',
+  tutorial: "#7FC4A0",
+  easy: "#5FBF6A",
+  medium: "#F2C438",
+  hard: "#F28B36",
+  expert: "#E8503F",
 };
 
 function LevelCardComponent({
@@ -89,8 +90,8 @@ function LevelCardComponent({
     onPress(levelId);
   }, [levelId, onPress]);
 
-  const locked = state === 'locked';
-  const completed = state === 'completed';
+  const locked = state === "locked";
+  const completed = state === "completed";
 
   const background = locked
     ? UI_COLORS.paperDeep
@@ -102,11 +103,22 @@ function LevelCardComponent({
     : completed
       ? UI_COLORS.successDark
       : UI_COLORS.brand;
-  const numberColor = locked ? UI_COLORS.inkMuted : completed ? '#FFFFFF' : UI_COLORS.ink;
+  const numberColor = locked
+    ? UI_COLORS.inkMuted
+    : completed
+      ? "#FFFFFF"
+      : UI_COLORS.ink;
+
+  // Responsive metrics derived from the card size (which is already responsive).
+  const radius = Math.max(rs(14), size * 0.18);
+  const badgeOffset = Math.max(rs(5), size * 0.07);
+  const iconSize = Math.max(rs(14), size * 0.24);
+  const dotSize = Math.max(rs(6), size * 0.1);
+  const fontSize = rf(Math.max(11, size * 0.28));
 
   const accessibilityLabel = locked
     ? `Level ${levelId}, ${name}, locked. Finish the previous level to unlock it.`
-    : `Level ${levelId}, ${name}, ${DIFFICULTY_LABEL[difficulty]}${completed ? ', completed' : ''}`;
+    : `Level ${levelId}, ${name}, ${DIFFICULTY_LABEL[difficulty]}${completed ? ", completed" : ""}`;
 
   return (
     <Animated.View style={animatedStyle}>
@@ -117,7 +129,7 @@ function LevelCardComponent({
         disabled={locked}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
-        accessibilityHint={locked ? undefined : 'Opens this level'}
+        accessibilityHint={locked ? undefined : "Opens this level"}
         accessibilityState={{ disabled: locked }}
         style={[
           styles.card,
@@ -127,23 +139,42 @@ function LevelCardComponent({
             height: size,
             backgroundColor: background,
             borderColor: border,
+            borderRadius: radius,
           },
         ]}
       >
-        <View style={styles.badge}>
+        <View style={[styles.badge, { top: badgeOffset, right: badgeOffset }]}>
           {locked ? (
-            <Icon name="lock" size={size * 0.26} color={UI_COLORS.inkMuted} strokeWidth={2.2} />
+            <Icon
+              name="lock"
+              size={iconSize}
+              color={UI_COLORS.inkMuted}
+              strokeWidth={2.2}
+            />
           ) : completed ? (
-            <Icon name="check" size={size * 0.26} color="#FFFFFF" strokeWidth={3} />
+            <Icon
+              name="check"
+              size={iconSize}
+              color="#FFFFFF"
+              strokeWidth={3}
+            />
           ) : (
             <View
-              style={[styles.dot, { backgroundColor: DIFFICULTY_COLOR[difficulty] }]}
+              style={[
+                styles.dot,
+                {
+                  width: dotSize,
+                  height: dotSize,
+                  borderRadius: dotSize / 2,
+                  backgroundColor: DIFFICULTY_COLOR[difficulty],
+                },
+              ]}
               accessibilityElementsHidden
             />
           )}
         </View>
 
-        <Text style={[styles.number, { fontSize: size * 0.3, color: numberColor }]}>
+        <Text style={[styles.number, { fontSize, color: numberColor }]}>
           {levelId}
         </Text>
       </Pressable>
@@ -153,23 +184,16 @@ function LevelCardComponent({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 20,
     borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   badge: {
-    position: 'absolute',
-    top: 6,
-    right: 7,
+    position: "absolute",
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
+  dot: {},
   number: {
-    fontWeight: '800',
+    fontWeight: "800",
   },
 });
 

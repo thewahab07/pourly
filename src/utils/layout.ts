@@ -39,15 +39,15 @@ export interface BoardLayout {
 }
 
 /** Tubes narrower than this get hard to tap; wider than this looks clumsy. */
-const MIN_TUBE_WIDTH = 34;
-const MAX_TUBE_WIDTH = 78;
+const MIN_TUBE_WIDTH = 30;
+const MAX_TUBE_WIDTH = 82;
 
 /**
  * How much taller than its natural proportions a tube may be drawn when the
  * board has vertical room to spare. Without this, a single row of tubes leaves
  * most of a tall phone empty.
  */
-const MAX_HEIGHT_STRETCH = 1.22;
+const MAX_HEIGHT_STRETCH = 1.28;
 
 /** Wall thickness as a fraction of tube width, matched by the SVG renderer. */
 export const TUBE_WALL_RATIO = 0.085;
@@ -83,18 +83,24 @@ export function computeBoardLayout(input: BoardLayoutInput): BoardLayout {
   // Interior height is capacity layers plus head room; add the two walls.
   const naturalAspect = capacity * 0.74 + TUBE_HEAD_RATIO + 0.5;
 
-  const columnGapRatio = 0.38;
-  const rowGap = rows > 1 ? 26 : 0;
+  const columnGapRatio = 0.4;
+  // Row gap scales gently with available height so it is proportional on all screens.
+  const rowGap = rows > 1 ? clamp(height * 0.045, 18, 34) : 0;
 
   // Width-driven candidate: fit `columns` tubes plus the gaps between them.
   const widthBudget = Math.max(1, width);
-  const widthCandidate = widthBudget / (columns + columnGapRatio * (columns - 1));
+  const widthCandidate =
+    widthBudget / (columns + columnGapRatio * (columns - 1));
 
   // Height-driven candidate: fit `rows` tubes plus the gap between rows.
   const heightPerRow = Math.max(1, height - rowGap * (rows - 1)) / rows;
   const heightCandidate = heightPerRow / naturalAspect;
 
-  const tubeWidth = clamp(Math.min(widthCandidate, heightCandidate), MIN_TUBE_WIDTH, MAX_TUBE_WIDTH);
+  const tubeWidth = clamp(
+    Math.min(widthCandidate, heightCandidate),
+    MIN_TUBE_WIDTH,
+    MAX_TUBE_WIDTH,
+  );
 
   // Spend leftover vertical room on taller tubes rather than empty background,
   // but never stretch them into straws.

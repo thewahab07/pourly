@@ -5,17 +5,18 @@
  * All game rules live in the store and the engine — this component only decides
  * what the board looks like and where things are.
  */
-import { memo, useCallback, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { memo, useCallback, useMemo } from "react";
+import { StyleSheet, View } from "react-native";
 
-import type { LiquidColor } from '../../engine/types';
-import { usePourAnimation } from '../../hooks/usePourAnimation';
-import type { ActivePour, RejectedMove } from '../../state/gameStore';
-import { liquidPalette } from '../../theme/colors';
-import { computeBoardLayout } from '../../utils/layout';
-import { PourStream } from './PourStream';
-import { TubeView } from './TubeView';
-import { computePourGeometry, pourHeadroom } from './pourGeometry';
+import type { LiquidColor } from "../../engine/types";
+import { usePourAnimation } from "../../hooks/usePourAnimation";
+import type { ActivePour, RejectedMove } from "../../state/gameStore";
+import { liquidPalette } from "../../theme/colors";
+import { computeBoardLayout } from "../../utils/layout";
+import { rs } from "../../utils/responsive";
+import { PourStream } from "./PourStream";
+import { TubeView } from "./TubeView";
+import { computePourGeometry, pourHeadroom } from "./pourGeometry";
 
 interface GameBoardProps {
   readonly tubes: readonly (readonly LiquidColor[])[];
@@ -32,10 +33,10 @@ interface GameBoardProps {
 }
 
 /**
- * Horizontal breathing room kept inside the board. Applied here rather than by
- * the caller so a measured container's padding can never be double-counted.
+ * Horizontal breathing room inside the board. Scales with screen width so
+ * tubes have consistent margins on small and large phones.
  */
-const BOARD_INSET = 14;
+const BOARD_INSET = rs(12);
 
 /** Describes a tube for screen readers: its position, contents and state. */
 function describeTube(
@@ -46,14 +47,19 @@ function describeTube(
 ): string {
   const position = `Tube ${index + 1}`;
   if (layers.length === 0) {
-    return `${position}, empty${selected ? ', selected' : ''}`;
+    return `${position}, empty${selected ? ", selected" : ""}`;
   }
 
   // Read the contents top-down, which is the order they will pour out.
-  const topDown = [...layers].reverse().map((color) => liquidPalette(color).label);
-  const contents = topDown.join(', ');
-  const fullness = layers.length === capacity ? 'full' : `${layers.length} of ${capacity} layers`;
-  return `${position}, ${fullness}, from top: ${contents}${selected ? ', selected' : ''}`;
+  const topDown = [...layers]
+    .reverse()
+    .map((color) => liquidPalette(color).label);
+  const contents = topDown.join(", ");
+  const fullness =
+    layers.length === capacity
+      ? "full"
+      : `${layers.length} of ${capacity} layers`;
+  return `${position}, ${fullness}, from top: ${contents}${selected ? ", selected" : ""}`;
 }
 
 function GameBoardComponent({
@@ -73,7 +79,8 @@ function GameBoardComponent({
       computeBoardLayout({
         width: Math.max(1, width - BOARD_INSET * 2),
         // Leave room above and below for a tilted tube during a pour.
-        height: Math.max(1, height * 0.72),
+        // Use a more generous fraction of available height for tall screens.
+        height: Math.max(1, height * 0.78),
         tubeCount: tubes.length,
         capacity,
       }),
@@ -129,16 +136,27 @@ function GameBoardComponent({
               slot={slot}
               selected={selected}
               disabled={locked}
-              pourRole={isSource ? 'source' : isDestination ? 'destination' : null}
-              pourAmount={isSource || isDestination ? (activePour?.amount ?? 0) : 0}
-              pourColor={isSource || isDestination ? (activePour?.color ?? null) : null}
+              pourRole={
+                isSource ? "source" : isDestination ? "destination" : null
+              }
+              pourAmount={
+                isSource || isDestination ? (activePour?.amount ?? 0) : 0
+              }
+              pourColor={
+                isSource || isDestination ? (activePour?.color ?? null) : null
+              }
               pourTarget={isSource ? (pourGeometry?.target ?? null) : null}
               lift={timeline.lift}
               travel={timeline.travel}
               flow={timeline.flow}
               shakeToken={rejected?.tube === index ? rejected.token : null}
               onPress={handleTap}
-              accessibilityLabel={describeTube(index, layers, capacity, selected)}
+              accessibilityLabel={describeTube(
+                index,
+                layers,
+                capacity,
+                selected,
+              )}
             />
           );
         })}
@@ -165,12 +183,12 @@ function GameBoardComponent({
 
 const styles = StyleSheet.create({
   root: {
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    width: '100%',
+    alignItems: "center",
+    justifyContent: "flex-start",
+    width: "100%",
   },
   board: {
-    position: 'relative',
+    position: "relative",
   },
 });
 
