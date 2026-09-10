@@ -17,7 +17,8 @@ export type IconName =
   | "sound"
   | "music"
   | "vibrate"
-  | "trash";
+  | "trash"
+  | "privacy";
 
 interface IconProps {
   readonly name: IconName;
@@ -111,6 +112,15 @@ function IconComponent({ name, size = 22, color, strokeWidth = 2 }: IconProps) {
         <>
           <Rect x="8.5" y="4" width="7" height="16" rx="2" {...common} />
           <Path d="M4.5 9v6M2 10.5v3M19.5 9v6M22 10.5v3" {...common} />
+        </>
+      ) : null}
+
+      {name === "privacy" ? (
+        <>
+          <Rect x="3" y="3" width="18" height="18" rx="2" {...common} />
+          <Path d="M7 8h8" {...common} />
+          <Path d="M7 12h10" {...common} />
+          <Path d="M7 16h6" {...common} />
         </>
       ) : null}
 

@@ -1,18 +1,18 @@
 /**
- * Where a pouring tube travels to, and where its stream arc falls.
+ * Where a pouring tube travels to, and where its stream falls.
  *
- * The source tube tilts so its mouth hovers above the destination. The stream
- * is a curved SVG arc from the tilted mouth to the destination's opening —
- * just like pouring a liquid in real life.
+ * The source tube tilts almost onto its side so its mouth hovers directly
+ * above the destination, well clear of it. The stream is a thin, straight
+ * vertical drop from the tilted mouth down into the destination's opening.
  */
-import type { BoardLayout } from '../../utils/layout';
-import type { PourTarget } from './TubeView';
+import type { BoardLayout } from "../../utils/layout";
+import type { PourTarget } from "./TubeView";
 
-/** Tilt of a pouring tube, in degrees. */
-const POUR_ANGLE = 62;
+/** Tilt of a pouring tube, in degrees — nearly horizontal, like tipping a test tube on its side. */
+const POUR_ANGLE = 80;
 
 /** Vertical gap between the source's mouth and the destination's, as a share of tube height. */
-const MOUTH_GAP_RATIO = 0.22;
+const MOUTH_GAP_RATIO = 0.4;
 
 export interface PourGeometry {
   readonly target: PourTarget;
@@ -41,7 +41,7 @@ const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
  * can reserve it and the tilted tube is never clipped.
  */
 export function pourHeadroom(layout: BoardLayout): number {
-  return layout.tubeHeight * 0.55;
+  return layout.tubeHeight * 0.7;
 }
 
 export function computePourGeometry(
@@ -63,7 +63,10 @@ export function computePourGeometry(
   let direction = destination.x >= source.x ? 1 : -1;
   const margin = tubeWidth * 0.35;
   const centerFor = (dir: number): number => destination.x - dir * offsetX;
-  if (centerFor(direction) < margin || centerFor(direction) > boardWidth - margin) {
+  if (
+    centerFor(direction) < margin ||
+    centerFor(direction) > boardWidth - margin
+  ) {
     direction = -direction;
   }
 
@@ -71,18 +74,19 @@ export function computePourGeometry(
 
   // Destination mouth position (board coords): top-centre of destination tube
   const destMouthX = destination.x;
-  const destMouthY = destination.y - halfHeight - gap * 0.2;
+  const destMouthY = destination.y - halfHeight - tubeHeight * 0.05;
 
-  // Where the tilted source ends up (board coords):
-  // centre of source when tilted over destination
-  const centerX = centerFor(direction);
-  const centerY = destMouthY + halfHeight * Math.cos(angle);
+  // Source mouth (board coords): held `gap` above the destination's mouth,
+  // directly in line with it, so the stream falls in a straight vertical drop.
+  const sourceMouthX = destMouthX;
+  const sourceMouthY = destMouthY - gap;
 
-  // Source mouth (board coords): tip of the tilted tube
-  // When tilted by `angle`, the mouth is at the end of the tube rotated around its centre.
-  // The mouth moves: +/- sin(angle)*halfHeight horizontally, -cos(angle)*halfHeight vertically
-  const sourceMouthX = centerX + direction * halfHeight * Math.sin(angle);
-  const sourceMouthY = centerY - halfHeight * Math.cos(angle);
+  // Where the tilted source ends up (board coords): centre of the tube when
+  // tilted, worked backwards from its mouth position.
+  // When tilted by `angle`, the mouth sits away from the centre by
+  // +/- sin(angle)*halfHeight horizontally and -cos(angle)*halfHeight vertically.
+  const centerX = sourceMouthX - direction * halfHeight * Math.sin(angle);
+  const centerY = sourceMouthY + halfHeight * Math.cos(angle);
 
   // Build a bounding box that contains both arc endpoints with padding
   const padding = tubeWidth * 0.8;

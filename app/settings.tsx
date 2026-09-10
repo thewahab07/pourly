@@ -5,7 +5,7 @@
  * there is nothing to "save" and nothing to lose if the app is killed.
  */
 import { useCallback, useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { Alert, Linking, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
@@ -65,6 +65,10 @@ export default function SettingsScreen() {
       ],
     );
   }, [resetProgress]);
+
+  const handlePrivacyPolicy = useCallback(() => {
+    void Linking.openURL("https://thewahab07.github.io/pourly/");
+  }, []);
 
   return (
     <PaperBackground>
@@ -158,7 +162,7 @@ export default function SettingsScreen() {
               levels.
             </Text>
 
-            <View style={{ marginTop: rs(14) }}>
+            <View style={{ marginVertical: rs(14) }}>
               <Button
                 label={resetting ? "Resetting…" : "Reset progress"}
                 onPress={handleReset}
@@ -170,6 +174,15 @@ export default function SettingsScreen() {
                 accessibilityHint="Asks for confirmation before deleting all progress"
               />
             </View>
+            <Button
+              label="Privacy Policy"
+              onPress={handlePrivacyPolicy}
+              variant="secondary"
+              size="medium"
+              fullWidth
+              icon={<Icon name="privacy" size={rs(17)} color={UI_COLORS.ink} />}
+              accessibilityHint="Opens the privacy policy in your browser"
+            />
           </View>
 
           <Text
@@ -180,8 +193,8 @@ export default function SettingsScreen() {
               color: UI_COLORS.inkMuted,
             }}
           >
-            Pourly plays entirely offline.{"\n"}No ads, no accounts,
-            no tracking.
+            Pourly plays entirely offline.{"\n"}No ads, no accounts, no
+            tracking.
           </Text>
         </ScrollView>
       </SafeAreaView>

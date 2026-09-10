@@ -81,7 +81,7 @@ export default function HomeScreen() {
               }}
               accessibilityRole="header"
             >
-              Pourly{"\n"}Color Sort
+              Pourly
             </Text>
             <Text
               style={{
